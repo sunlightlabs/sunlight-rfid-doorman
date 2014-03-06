@@ -14,7 +14,7 @@ from settings import *
 last_id_list_update = None
 
 def refresh_access_control_list():	
-	gc = gspread.login(USERNAME, PASSWORD)
+	gc = gspread.login(SPREADSHEET_USER, SPREADSHEET_PASSWORD)
 	sh = gc.open(SPREADSHEET_NAME)	
 	worksheet = sh.worksheet(SPREADSHEET_WORKSHEET)
 	key_cells = worksheet.col_values(1)
@@ -23,7 +23,7 @@ def refresh_access_control_list():
 	
 	acl = {}
 
-	for (i, (key, email, active)) in enumerate(izip(key_cells, email_cells, active_cells)):
+	for (i, (key, email, active)) in enumerate(itertools.izip(key_cells, email_cells, active_cells)):
 		if i==0:
 			continue
 		if active.upper().strip()=='Y':
@@ -54,13 +54,13 @@ def main():
 		line = ser.readline()		
 		match = re_identifiers.search(line)
 		if match is not None:		
-			serial = match.group(1)	
+			rfid_serial = match.group(1)	
 			if match.group(1) in acl.keys():
 				ser.write('G')				
 				envoy.run('ssh gatekeeper /usr/bin/python /root/cycle.py')
-				print '%s (%s) - [OK]' % (serial, acl[serial])
+				print '%s (%s) - [OK]' % (rfid_serial, acl[rfid_serial])
 			else:
-				print '%s - [DENY]' % (serial)
+				print '%s - [DENY]' % (rfid_serial)
 				ser.write('R')
 
 
