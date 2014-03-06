@@ -1,3 +1,5 @@
+#!/home/pi/.virtualenvs/sunlight_rfid_doorman/bin/python
+
 import time
 import re
 import itertools
