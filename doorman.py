@@ -5,37 +5,25 @@ import re
 import itertools
 
 import serial
-import gspread
 import envoy
 
 from settings import *
+from acl import *
 
+def allow(ser):
+	ser.write('G')				
+	envoy.run('ssh gatekeeper /usr/bin/python /root/cycle.py')
+	print '%s (%s) - [OK]' % (rfid_serial, acl[rfid_serial])
 
-last_id_list_update = None
-
-def refresh_access_control_list():	
-	gc = gspread.login(SPREADSHEET_USER, SPREADSHEET_PASSWORD)
-	sh = gc.open(SPREADSHEET_NAME)	
-	worksheet = sh.worksheet(SPREADSHEET_WORKSHEET)
-	key_cells = worksheet.col_values(1)
-	email_cells = worksheet.col_values(2)
-	active_cells = worksheet.col_values(3)
-	
-	acl = {}
-
-	for (i, (key, email, active)) in enumerate(itertools.izip(key_cells, email_cells, active_cells)):
-		if i==0:
-			continue
-		if active.upper().strip()=='Y':
-			acl[key.strip()] = email.strip()
-
-	last_id_list_update = time.time()
-
-	return acl
+def deny(ser):
+	print '%s - [DENY]' % (rfid_serial)
+	ser.write('R')
 
 def main():
 
-	acl = refresh_access_control_list()
+	last_rfid_serial = None
+
+	refresh_access_control_list()
 
 	re_identifiers = re.compile(r'\[(.{10})\]')
 
@@ -52,16 +40,35 @@ def main():
 
 	while True:		
 		line = ser.readline()		
+		acl = get_access_control_list() # refresh from redis
+
+		# pull the RFID serial number from the serial input
 		match = re_identifiers.search(line)
 		if match is not None:		
 			rfid_serial = match.group(1)	
-			if match.group(1) in acl.keys():
-				ser.write('G')				
-				envoy.run('ssh gatekeeper /usr/bin/python /root/cycle.py')
-				print '%s (%s) - [OK]' % (rfid_serial, acl[rfid_serial])
+			if rfid_serial in acl.keys():
+				allow()
 			else:
-				print '%s - [DENY]' % (rfid_serial)
-				ser.write('R')
+				# is this the first time this serial has failed?
+				# if so, check for an updated ACL & rerun check
+				if rfid_serial!=last_rfid_serial:
+					ser.write('Y') # signal we're thinking...
+
+					# pull a fresh ACL
+					refresh_access_control_list()
+					acl = get_access_control_list()
+					
+					# recheck
+					if rfid_serial in acl.keys():
+						allow(ser)
+					else:
+						deny(ser)
+
+					# record failed serial; we don't want a DOS
+					last_rfid_serial = rfid_serial
+				
+				else:
+					deny(ser)
 
 
 if __name__ == '__main__':

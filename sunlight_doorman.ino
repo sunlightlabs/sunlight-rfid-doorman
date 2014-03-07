@@ -162,6 +162,19 @@ void setup() {
   MFRC522_Init();  
 }
 
+
+void LEDBusyState(){
+  analogWrite(3, 0);
+  analogWrite(6, 0);
+  analogWrite(9, 255);
+}
+
+void LEDOffState(){
+  analogWrite(3, 255);
+  analogWrite(6, 255);
+  analogWrite(9, 255);
+}
+
 void LEDWaitState(){
   analogWrite(3, 255);
   analogWrite(6, 255);
@@ -222,6 +235,8 @@ void loop()
  
     delay(100); // give Python some time to process
   
+
+    bool doDelay = true;
     while(Serial.available()>0) {
       char incomingByte = Serial.read();
       switch(incomingByte){
@@ -234,11 +249,22 @@ void loop()
           LEDOKState();
           delay(1000);
           break;
+
+        case 'Y':
+          while (Serial.available()==0){
+            LEDBusyState();
+            delay(200);
+            LEDOffState();
+            delay(200); 
+            doDelay = false;           
+          }
       } 
       LEDWaitState();
     }
 
-    delay(1000);
+    if(doDelay){
+      delay(1000);
+    }
     
     //LEDWaitState();
   }
