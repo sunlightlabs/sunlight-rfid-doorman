@@ -23,7 +23,7 @@ def deny(ser, rfid_serial):
 
 def main():
 
-	last_rfid_serial = None
+	denied_rfid_serials = []
 
 	refresh_access_control_list()
 
@@ -50,10 +50,11 @@ def main():
 			rfid_serial = match.group(1)	
 			if rfid_serial in acl.keys():
 				allow(ser, acl[rfid_serial])
+				denied_rfid_serials = []
 			else:
 				# is this the first time this serial has failed?
 				# if so, check for an updated ACL & rerun check
-				if rfid_serial!=last_rfid_serial:
+				if rfid_serial not in denied_rfid_serials:
 					ser.write('Y') # signal we're thinking...
 
 					# pull a fresh ACL
@@ -63,14 +64,15 @@ def main():
 					# recheck
 					if rfid_serial in acl.keys():
 						allow(ser, acl[rfid_serial])
+						denied_rfid_serials = []
 					else:
 						deny(ser, rfid_serial)
+						denied_rfid_serials.append(rfid_serial)
 
-					# record failed serial; we don't want a DOS
-					last_rfid_serial = rfid_serial
 				
 				else:
 					deny(ser, rfid_serial)
+					denied_rfid_serials.append(rfid_serial)
 
 
 if __name__ == '__main__':
