@@ -4,6 +4,10 @@ import pickle
 import datetime
 import time
 import itertools
+from functools import wraps
+import errno
+import os
+import signal
 
 import redis
 import gspread
@@ -13,6 +17,28 @@ from settings import *
 ACL_KEY = 'sunlight-doorman-acl'
 LOG_KEY = 'sunlight-doorman-log'
 
+class TimeoutError(Exception):
+    pass
+
+def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
+    def decorator(func):
+        def _handle_timeout(signum, frame):
+            raise TimeoutError(error_message)
+
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+
+        return wraps(func)(wrapper)
+
+    return decorator
+
+@timeout(10)
 def refresh_access_control_list(gc=None):	
 	if gc is None:
 		gc = gspread.login(SPREADSHEET_USER, SPREADSHEET_PASSWORD)
@@ -49,7 +75,7 @@ def _log_worksheet_name(timestamp):
 	dt = datetime.datetime.fromtimestamp(float(timestamp))
 	return 'log - %d/%d' % (dt.month, dt.year)
 	
-
+@timeout(30)
 def store_log(gc=None):
 	if gc is None:
 		gc = gspread.login(SPREADSHEET_USER, SPREADSHEET_PASSWORD)
@@ -97,5 +123,6 @@ def store_log(gc=None):
 
 if __name__ == '__main__':
 	gc = gspread.login(SPREADSHEET_USER, SPREADSHEET_PASSWORD)
+	
 	refresh_access_control_list(gc)
 	store_log(gc)

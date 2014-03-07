@@ -2,6 +2,7 @@
 
 import time
 import re
+import sys
 import itertools
 
 import serial
@@ -10,15 +11,19 @@ import envoy
 from settings import *
 from acl import *
 
+QUIET = '--quiet' in map(lambda x: x.strip(), sys.argv)
+
 def allow(ser, user_id):
 	ser.write('G')				
 	envoy.run('ssh gatekeeper /usr/bin/python /root/cycle.py')
-	print '[PASS] %s | %s' % (datetime.datetime.now().isoformat(), user_id)
+	if not QUIET:
+		print '[PASS] %s | %s' % (datetime.datetime.now().isoformat(), user_id)
 	log((time.time(), user_id, 'PASS'))
 
 def deny(ser, rfid_serial):
 	ser.write('R')
-	print '[DENY] %s | %s' % (datetime.datetime.now().isoformat(), rfid_serial)
+	if not QUIET:
+		print '[DENY] %s | %s' % (datetime.datetime.now().isoformat(), rfid_serial)
 	log((time.time(), rfid_serial, 'DENY'))
 
 def main():
@@ -29,7 +34,8 @@ def main():
 
 	re_identifiers = re.compile(r'\[(.{10})\]')
 
-	print 'Starting...'
+	if not QUIET:
+		print 'Starting...'
 
 	# open serial connection
 	ser = serial.Serial(SERIAL_PORT, SERIAL_RATE)
@@ -37,8 +43,9 @@ def main():
 	# wait for Arduino to restart due to serial connection
 	time.sleep(2) 
 
-	print 'Ready.'
-	print ('-' * 60)
+	if not QUIET:
+		print 'Ready.'
+		print ('-' * 60)
 
 	while True:		
 		line = ser.readline()		
@@ -58,7 +65,10 @@ def main():
 					ser.write('Y') # signal we're thinking...
 
 					# pull a fresh ACL
-					refresh_access_control_list()
+					try:
+						refresh_access_control_list()
+					except:
+						pass
 					acl = get_access_control_list()
 					
 					# recheck
