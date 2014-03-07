@@ -7,7 +7,7 @@ Installation
 ------------
 1. Program the Arduino with the included .ino file
 2. Flash a stock Raspbian image to an SD card
-3. Run `sudo bootstraph.sh` from [this repository](https://github.com/sbma44/rpi)
+3. Clone [this repository](https://github.com/sbma44/rpi) and run `sudo bootstraph.sh`
 4. Use virtualenv's `mkproject` to create a viable clone of this repo.
 5. `pip install -r requirements.txt`
 6. Customize config files; hook doorman.py's allow() routine to code that actually opens the door!
