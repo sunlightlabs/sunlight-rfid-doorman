@@ -3,6 +3,7 @@
 import pickle
 import datetime
 import time
+import itertools
 
 import redis
 import gspread
