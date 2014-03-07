@@ -14,8 +14,8 @@ from acl import *
 QUIET = '--quiet' in map(lambda x: x.strip(), sys.argv)
 
 def allow(ser, user_id):
-	ser.write('G')				
 	envoy.run('ssh gatekeeper /usr/bin/python /root/cycle.py')
+	ser.write('G')				
 	if not QUIET:
 		print '[PASS] %s | %s' % (datetime.datetime.now().isoformat(), user_id)
 	log((time.time(), user_id, 'PASS'))
