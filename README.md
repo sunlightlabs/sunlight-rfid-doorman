@@ -1,7 +1,7 @@
 sunlight-rfid-doorman
 =====================
 
-This code secures Sunlight's office door with an RFID system built out of an Arduino, Raspberry Pi and a 13.56 GHz RFID reader component. 
+This code secures Sunlight's office door with an RFID system built out of an Arduino, Raspberry Pi and a 13.56 GHz RFID reader component. The reader is connected to the Arduino, which is connected over USB to the Pi, which is connected to your network, which is connected to a secured device that can open the door in response to network commands issued by the Pi. That's the plan, anyway.
 
 Installation
 ------------
