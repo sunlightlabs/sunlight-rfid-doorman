@@ -10,14 +10,16 @@ import envoy
 from settings import *
 from acl import *
 
-def allow(ser):
+def allow(ser, user_id):
 	ser.write('G')				
 	envoy.run('ssh gatekeeper /usr/bin/python /root/cycle.py')
-	print '%s (%s) - [OK]' % (rfid_serial, acl[rfid_serial])
+	print '[PASS] %s | %s' % (datetime.datetime.now().isoformat(), user_id)
+	log((time.time(), user_id, 'PASS'))
 
-def deny(ser):
-	print '%s - [DENY]' % (rfid_serial)
+def deny(ser, rfid_serial):
 	ser.write('R')
+	print '[DENY] %s | %s' % (datetime.datetime.now().isoformat(), rfid_serial)
+	log((time.time(), rfid_serial, 'DENY'))
 
 def main():
 
@@ -47,7 +49,7 @@ def main():
 		if match is not None:		
 			rfid_serial = match.group(1)	
 			if rfid_serial in acl.keys():
-				allow()
+				allow(ser, acl[rfid_serial])
 			else:
 				# is this the first time this serial has failed?
 				# if so, check for an updated ACL & rerun check
@@ -60,15 +62,15 @@ def main():
 					
 					# recheck
 					if rfid_serial in acl.keys():
-						allow(ser)
+						allow(ser, acl[rfid_serial])
 					else:
-						deny(ser)
+						deny(ser, rfid_serial)
 
 					# record failed serial; we don't want a DOS
 					last_rfid_serial = rfid_serial
 				
 				else:
-					deny(ser)
+					deny(ser, rfid_serial)
 
 
 if __name__ == '__main__':
