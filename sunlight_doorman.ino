@@ -243,11 +243,23 @@ void loop()
         case 'R':
           LEDDenyState();
           delay(1000);
+
+          // clear out the serial bus
+          while(Serial.available()>0){
+            Serial.read();
+          }
+
           break;
   
         case 'G':
           LEDOKState();
           delay(1000);
+
+          // clear out the serial bus
+          while(Serial.available()>0){
+            Serial.read();
+          }
+
           break;
 
         case 'Y':
