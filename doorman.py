@@ -30,15 +30,34 @@ def main():
 
 	denied_rfid_serials = []
 
-	refresh_access_control_list()
+	# refresh the ACL, waiting 5s between attempts
+	if not QUIET:
+		print 'Retrieving Access Control List...'
+	failed = True
+	while failed:
+		try:
+			refresh_access_control_list()
+			failed = False
+		except:
+			failed = True
+			time.sleep(5)
 
 	re_identifiers = re.compile(r'\[(.{10})\]')
 
+	# open serial connection (retrying every 5s)
+	if not QUIET:
+		print 'Opening serial connection...'
+	failed = True
+	while failed:
+		try:
+			ser = serial.Serial(SERIAL_PORT, SERIAL_RATE)
+			failed = False
+		except:
+			failed = True
+			time.sleep(5)
+
 	if not QUIET:
 		print 'Starting...'
-
-	# open serial connection
-	ser = serial.Serial(SERIAL_PORT, SERIAL_RATE)
 
 	# wait for Arduino to restart due to serial connection
 	time.sleep(2) 
